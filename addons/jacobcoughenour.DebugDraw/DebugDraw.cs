@@ -42,27 +42,28 @@ public partial class DebugDraw : Node3D
 	private ConcurrentStack<StandardMaterial3D> _line_material_pool = new();
 	private static readonly ConcurrentDictionary<string, int> _metrics = new();
 
+	/// <summary>
+	/// The path to the DebugDraw node singleton in the tree.
+	/// </summary>
 	public const string Path = "/root/DebugDraw";
 
-	public override void _EnterTree()
-	{
-		base._EnterTree();
-		Debug.Assert(GetPath() == Path, $"DebugDraw.Path != {Path}");
-	}
-
+	/// <summary>
+	/// Get the DebugDraw singleton node.
+	/// </summary>
+	/// <param name="node">Your node in the tree so it can get a reference to the scene tree.</param>
 	public static DebugDraw Get(Node node)
 	{
 		return node.GetNodeOrNull<DebugDraw>("/root/DebugDraw");
 	}
 
-	public override void _Ready()
-	{
-		var c = new Control();
-		AddChild(c);
-		_font = c.GetThemeDefaultFont();
-		c.QueueFree();
-	}
-
+	/// <summary>
+	/// Draws a wire-frame box using the given transform.
+	/// The box starts at 0,0,0 and extends to 1,1,1 with the lines aligned to
+	/// the axes of the transform instead of the world axes.
+	/// </summary>
+	/// <param name="transform">Transform to draw box within.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
 	public void DrawBox(Transform3D transform, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
@@ -79,23 +80,41 @@ public partial class DebugDraw : Node3D
 		));
 	}
 
+	/// <summary>
+	/// Draws an wire-frame axis aligned bounding box.
+	/// </summary>
+	/// <param name="min">The min value of the bounding box.</param>
+	/// <param name="extent">The scale of the bounding box.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
 	public void DrawAABB(Vector3 min, Vector3 extent, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
 			return;
-
 		DrawBox(new Transform3D(Basis.Identity, min).Scaled(extent), color, frames);
 	}
 
+	/// <summary>
+	/// Draws an wire-frame axis aligned box.
+	/// </summary>
+	/// <param name="position">Center position of the box.</param>
+	/// <param name="size">Size of the box.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
 	public void DrawBox(Vector3 position, Vector3 size, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
 			return;
-
 		DrawAABB(position - size * 0.5f, size, color, frames);
 	}
 
-
+	/// <summary>
+	/// Draws a line between two points.
+	/// </summary>
+	/// <param name="a">First point.</param>
+	/// <param name="b">Second point.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
 	public void DrawLine3D(Vector3 a, Vector3 b, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
@@ -118,9 +137,13 @@ public partial class DebugDraw : Node3D
 		_lines.Enqueue(new DebugEntry<MeshInstance3D>(mesh, Engine.GetFramesDrawn() + frames));
 	}
 
-
-
-	public void DrawPoint3D(Vector3 a, Color color, int frames = LINES_LINGER_FRAMES)
+	/// <summary>
+	/// Draws a point at the given position. The point is just made of a bunch of lines.
+	/// </summary>
+	/// <param name="position">Position of the point.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
+	public void DrawPoint3D(Vector3 position, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
 			return;
@@ -132,24 +155,24 @@ public partial class DebugDraw : Node3D
 		g.SurfaceSetColor(color);
 		var size = 0.06f;
 		var sizex = Mathf.Sin(0.25f * Mathf.Pi) * size;
-		g.SurfaceAddVertex(a + Vector3.Up * size);
-		g.SurfaceAddVertex(a + Vector3.Down * size);
-		g.SurfaceAddVertex(a + Vector3.Left * size);
-		g.SurfaceAddVertex(a + Vector3.Right * size);
-		g.SurfaceAddVertex(a + Vector3.Forward * size);
-		g.SurfaceAddVertex(a + Vector3.Back * size);
+		g.SurfaceAddVertex(position + Vector3.Up * size);
+		g.SurfaceAddVertex(position + Vector3.Down * size);
+		g.SurfaceAddVertex(position + Vector3.Left * size);
+		g.SurfaceAddVertex(position + Vector3.Right * size);
+		g.SurfaceAddVertex(position + Vector3.Forward * size);
+		g.SurfaceAddVertex(position + Vector3.Back * size);
 
-		g.SurfaceAddVertex(a + Vector3.One * sizex);
-		g.SurfaceAddVertex(a + Vector3.One * -sizex);
+		g.SurfaceAddVertex(position + Vector3.One * sizex);
+		g.SurfaceAddVertex(position + Vector3.One * -sizex);
 
-		g.SurfaceAddVertex(a + new Vector3(-sizex, sizex, -sizex));
-		g.SurfaceAddVertex(a + new Vector3(sizex, -sizex, sizex));
+		g.SurfaceAddVertex(position + new Vector3(-sizex, sizex, -sizex));
+		g.SurfaceAddVertex(position + new Vector3(sizex, -sizex, sizex));
 
-		g.SurfaceAddVertex(a + new Vector3(sizex, sizex, -sizex));
-		g.SurfaceAddVertex(a + new Vector3(-sizex, -sizex, sizex));
+		g.SurfaceAddVertex(position + new Vector3(sizex, sizex, -sizex));
+		g.SurfaceAddVertex(position + new Vector3(-sizex, -sizex, sizex));
 
-		g.SurfaceAddVertex(a + new Vector3(-sizex, sizex, sizex));
-		g.SurfaceAddVertex(a + new Vector3(sizex, -sizex, -sizex));
+		g.SurfaceAddVertex(position + new Vector3(-sizex, sizex, sizex));
+		g.SurfaceAddVertex(position + new Vector3(sizex, -sizex, -sizex));
 		g.SurfaceEnd();
 		var mesh = new MeshInstance3D
 		{
@@ -161,13 +184,28 @@ public partial class DebugDraw : Node3D
 		_lines.Enqueue(new DebugEntry<MeshInstance3D>(mesh, Engine.GetFramesDrawn() + frames));
 	}
 
+	/// <summary>
+	/// Draws a ray from an origin point extending in a direction for a given length.
+	/// </summary>
+	/// <param name="origin">Origin point of the ray.</param>
+	/// <param name="direction">Direction of the ray.</param>
+	/// <param name="length">Length of the ray.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
 	public void DrawRay3D(Vector3 origin, Vector3 direction, float length, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
 			return;
-		DrawLine3D(origin, origin + direction * length, color, frames);
+		DrawLine3D(origin, origin + direction.Normalized() * length, color, frames);
 	}
 
+	/// <summary>
+	/// Draws a ray and a hit point.
+	/// </summary>
+	/// <param name="start">Starting point of the ray cast.</param>
+	/// <param name="hit">Hit point of the ray cast.</param>
+	/// <param name="color">Color to use for the lines.</param>
+	/// <param name="frames">How many frames the box stays on screen.</param>
 	public void DrawRayCast3D(Vector3 start, Vector3 hit, Color color, int frames = LINES_LINGER_FRAMES)
 	{
 		if (!Visible)
@@ -176,6 +214,13 @@ public partial class DebugDraw : Node3D
 		DrawPoint3D(hit, color, frames);
 	}
 
+	/// <summary>
+	/// Sets key/value text to be displayed on screen for a given number of frames.
+	/// Calling multiple times will just update the value and reset the frame counter.
+	/// </summary>
+	/// <param name="key">The key to display.</param>
+	/// <param name="value">The value to display.</param>
+	/// <param name="frames">How many frames the text stays on screen.</param>
 	public void SetText(string key, string value, int frames = TEXT_LINGER_FRAMES)
 	{
 		if (!Visible)
@@ -186,11 +231,32 @@ public partial class DebugDraw : Node3D
 		);
 	}
 
+	/// <summary>
+	/// Similar to SetText() but will increment the value by 1 or a given amount.
+	/// The metric is rendered in the next frame then cleared.
+	/// Use for when you want to count how many times something happens per frame.
+	/// </summary>
+	/// <param name="key">The key to display.</param>
+	/// <param name="value">The value to increment by.</param>
 	public void IncrementMetric(string key, int value = 1)
 	{
 		if (!Visible)
 			return;
 		_metrics.AddOrUpdate(key, value, (k, v) => v + value);
+	}
+
+	public override void _EnterTree()
+	{
+		base._EnterTree();
+		Debug.Assert(GetPath() == Path, $"DebugDraw.Path != {Path}");
+	}
+
+	public override void _Ready()
+	{
+		var c = new Control();
+		AddChild(c);
+		_font = c.GetThemeDefaultFont();
+		c.QueueFree();
 	}
 
 	private MeshInstance3D GetBox()
